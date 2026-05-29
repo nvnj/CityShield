@@ -1,16 +1,18 @@
 import type { LatestSignals } from '../types'
 
-// viewBox "0 0 200 115"
-// Arc center cy=72, r=55 → top half arc spans y=17 to y=72, text y=88 and y=104.
-// Aspect ratio 200:115 = 1.74 → card needs only 115/200 × card_width height.
-// Uses strokeDashoffset on <circle> for smooth animated arc.
+// Fixed internal coordinate system — viewBox "0 0 200 120"
+// Arc: cx=100, cy=95, r=70 — top semicircle spans y=25 to y=95
+// Value text: y=115 (inside viewBox). Sub label: y=131 would overflow,
+// so we fit both inside 120 by placing value at y=112, sub at y=128...
+// Wait — viewBox height is 120 so we keep sub at y=119 (just inside).
+// The SVG fills 100%×100% of its parent div; viewBox handles all scaling.
 
-const R      = 55
-const STROKE = 9
-const CIRC   = Math.PI * R   // semicircle circumference ≈ 172.8
+const R      = 70
+const STROKE = 10
+const CIRC   = Math.PI * R   // semicircle circumference ≈ 219.9
 
 interface GaugeProps {
-  pct: number          // 0–1, defaults to 0 if undefined/null
+  pct: number        // 0–1
   color: string
   label: string
   valueText: string
@@ -19,67 +21,69 @@ interface GaugeProps {
 }
 
 function RingGauge({ pct, color, label, valueText, subText, subIsAlert }: GaugeProps) {
-  // FIX 3: clamp to 0–1, then compute strokeDashoffset
-  const safePct  = Math.max(0, Math.min(1, pct ?? 0))
+  const safePct    = Math.max(0, Math.min(1, pct ?? 0))
   const dashOffset = CIRC * (1 - safePct)
 
   return (
+    // Card: flex column, takes equal share of parent column height
     <div style={{
       background: '#0d0d2a',
       border: '1px solid #1e1e3a',
       borderRadius: 8,
-      padding: '14px 16px 12px',
-      flex: 1,
+      padding: '12px',
       display: 'flex',
       flexDirection: 'column',
+      flex: '1 1 0',
       minHeight: 0,
       overflow: 'hidden',
     }}>
-      {/* Card label */}
+      {/* Label row — fixed height, never scales */}
       <div style={{
         fontSize: 11,
         fontFamily: 'monospace',
         color: '#a0a0c0',
         textTransform: 'uppercase',
         letterSpacing: '2px',
-        marginBottom: 6,
+        marginBottom: 4,
         flexShrink: 0,
       }}>
         {label}
       </div>
 
-      {/* Single SVG: arc + value + label — all inside viewBox, scales with card width */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+      {/* SVG wrapper: takes all remaining card height */}
+      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
         <svg
-          viewBox="0 0 200 115"
+          viewBox="0 0 200 120"
           width="100%"
+          height="100%"
+          preserveAspectRatio="xMidYMid meet"
           style={{ display: 'block' }}
         >
-          {/* Track arc — top semicircle, center (100,72), r=55, open side down */}
+          {/* Track arc — background semicircle */}
           <circle
-            cx="100" cy="72" r={R}
+            cx="100" cy="95" r={R}
             fill="none"
             stroke="#1e1e3a"
             strokeWidth={STROKE}
             strokeLinecap="round"
             strokeDasharray={`${CIRC} ${CIRC * 10}`}
-            transform="rotate(-180 100 72)"
+            transform="rotate(-180 100 95)"
           />
-          {/* Value arc */}
+          {/* Value arc — animates via dashOffset */}
           <circle
-            cx="100" cy="72" r={R}
+            cx="100" cy="95" r={R}
             fill="none"
             stroke={color}
             strokeWidth={STROKE}
             strokeLinecap="round"
             strokeDasharray={`${CIRC} ${CIRC * 10}`}
             strokeDashoffset={dashOffset}
-            transform="rotate(-180 100 72)"
+            transform="rotate(-180 100 95)"
             style={{ transition: 'stroke-dashoffset 0.8s ease, stroke 0.3s ease' }}
           />
-          {/* Value — y=88, inside viewBox height 115 */}
+          {/* Value — y=103, inside viewBox height 120 */}
           <text
-            x="100" y="88"
+            x="100" y="103"
             textAnchor="middle"
             dominantBaseline="middle"
             fontSize="22"
@@ -89,9 +93,9 @@ function RingGauge({ pct, color, label, valueText, subText, subIsAlert }: GaugeP
           >
             {valueText}
           </text>
-          {/* Sub label — y=104, inside viewBox height 115 */}
+          {/* Sub label — y=117, inside viewBox height 120 */}
           <text
-            x="100" y="104"
+            x="100" y="117"
             textAnchor="middle"
             dominantBaseline="middle"
             fontSize="10"
@@ -116,7 +120,6 @@ interface Props {
 }
 
 export function SignalGauges({ signals }: Props) {
-  // FIX 3: all values default to 0 (not undefined/null) before being passed as pct
   const density   = signals?.density         ?? 0
   const speed     = signals?.speed_avg       ?? 0
   const sentiment = signals?.sentiment_score ?? 0
@@ -125,7 +128,8 @@ export function SignalGauges({ signals }: Props) {
   const headcount = signals?.headcount       ?? 0
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minHeight: 0 }}>
+    // Outer wrapper: flex column fills the column slot, gaps between cards
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: 8 }}>
       <RingGauge
         pct={density}
         color={densityColor(density)}
