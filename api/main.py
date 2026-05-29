@@ -16,8 +16,10 @@ NOTE: Do NOT use wildcard allow_origins — use allow_origin_regex for patterns
 (Starlette limitation confirmed in ADK_TASK_TEMPLATE.md).
 """
 
+import asyncio
 import logging
 import os
+import random
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -34,16 +36,80 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def _traffic_feeder_loop() -> None:
+    """Async traffic feeder — runs forever, yields to the event loop between ticks."""
+    from elastic.client import get_client, setup_indices
+    from elastic.ingest import _ROADS, _ZONES, _baseline_traffic, _spike_traffic
+
+    loop = asyncio.get_running_loop()
+    es = await loop.run_in_executor(None, get_client)
+    await loop.run_in_executor(None, setup_indices, es)
+
+    tick = 0
+    logger.info("Background traffic feeder started")
+    while True:
+        road = random.choice(_ROADS)
+        zone = random.choice(_ZONES)
+        is_spike = random.random() < 0.15
+        doc = _spike_traffic(road, zone) if is_spike else _baseline_traffic(road, zone)
+        try:
+            await loop.run_in_executor(None, lambda: es.index(index="traffic-stream", document=doc))
+            tick += 1
+            if tick % 10 == 0:
+                logger.info("Traffic feeder: %d docs indexed", tick)
+        except Exception as e:
+            logger.error("Traffic feeder index failed: %s", e)
+        await asyncio.sleep(5)
+
+
+async def _sentiment_feeder_loop() -> None:
+    """Async sentiment feeder — runs forever, yields to the event loop between ticks."""
+    from elastic.client import get_client, setup_indices
+    from elastic.ingest import _ZONES, _baseline_sentiment, _spike_sentiment
+
+    loop = asyncio.get_running_loop()
+    es = await loop.run_in_executor(None, get_client)
+    await loop.run_in_executor(None, setup_indices, es)
+
+    tick = 0
+    logger.info("Background sentiment feeder started")
+    while True:
+        zone = random.choice(_ZONES)
+        is_spike = random.random() < 0.10
+        doc = _spike_sentiment(zone) if is_spike else _baseline_sentiment(zone)
+        try:
+            await loop.run_in_executor(None, lambda: es.index(index="sentiment-stream", document=doc))
+            tick += 1
+            if tick % 10 == 0:
+                logger.info("Sentiment feeder: %d docs indexed", tick)
+        except Exception as e:
+            logger.error("Sentiment feeder index failed: %s", e)
+        await asyncio.sleep(5)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Ensure indices exist on startup before serving any requests."""
+    """Set up indices and start background synthetic feeders on startup."""
     from elastic.client import get_client, setup_indices
     try:
         setup_indices(get_client())
         logger.info("Elasticsearch indices verified on startup")
     except Exception as e:
         logger.error("Startup index setup failed: %s", e)
+
+    traffic_task  = asyncio.create_task(_traffic_feeder_loop(),  name="traffic-feeder")
+    sentiment_task = asyncio.create_task(_sentiment_feeder_loop(), name="sentiment-feeder")
+    logger.info("Background feeders scheduled")
+
     yield
+
+    traffic_task.cancel()
+    sentiment_task.cancel()
+    try:
+        await asyncio.gather(traffic_task, sentiment_task, return_exceptions=True)
+    except Exception:
+        pass
+    logger.info("Background feeders stopped")
 
 
 app = FastAPI(title="CityShield API", version="0.1.0", lifespan=lifespan)
