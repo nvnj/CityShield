@@ -7,6 +7,7 @@ CLI usage:
 """
 
 import argparse
+import asyncio
 import json
 import logging
 import time
@@ -194,6 +195,124 @@ def run_replay_feeder(timeline_path: Path = _DEFAULT_TIMELINE) -> None:
             logger.error("Replay crowd index failed at t+%ds: %s", target_t, e)
 
     logger.info("CV replay complete")
+
+
+_VIDEO_PATH = Path(__file__).parent / "crowd.mp4"
+
+
+async def run_cv_feeder_async(
+    zone: str = "gate_a",
+    zone_capacity: int = 400,
+    camera_id: str = "cam-01",
+    write_interval_seconds: int = 10,
+    frames_per_sample: int = 10,
+) -> None:
+    """Async CV feeder for background use from the FastAPI lifespan.
+
+    Loops crowd.mp4 indefinitely, processes every Nth frame with the optical-flow
+    estimator, and writes density readings to crowd-stream every
+    write_interval_seconds. Blocking CV and ES calls run in a thread-pool executor
+    so the asyncio event loop is never held.
+
+    Silently skips if the video file does not exist — the API still starts cleanly.
+    """
+    if not _VIDEO_PATH.exists():
+        logger.warning(
+            "CV feeder: video not found at %s — skipping crowd-stream writes", _VIDEO_PATH
+        )
+        return
+
+    from elastic.client import get_client, setup_indices
+    from cv.estimator import estimate_density
+
+    loop = asyncio.get_running_loop()
+
+    es = await loop.run_in_executor(None, get_client)
+    await loop.run_in_executor(None, setup_indices, es)
+
+    import cv2  # guarded import — not available in all envs
+
+    def _open_cap() -> cv2.VideoCapture:
+        cap = cv2.VideoCapture(str(_VIDEO_PATH))
+        if not cap.isOpened():
+            raise RuntimeError(f"Could not open {_VIDEO_PATH}")
+        return cap
+
+    cap: cv2.VideoCapture = await loop.run_in_executor(None, _open_cap)
+    readings_done = 0
+    frame_count = 0
+    prev_gray = None
+
+    logger.info("CV feeder started: video=%s zone=%s interval=%ds", _VIDEO_PATH.name, zone, write_interval_seconds)
+
+    try:
+        while True:
+            def _read_frame():
+                return cap.read()
+
+            ret, frame = await loop.run_in_executor(None, _read_frame)
+
+            if not ret:
+                # End of file — loop back to start
+                await loop.run_in_executor(None, lambda: cap.set(cv2.CAP_PROP_POS_FRAMES, 0))
+                prev_gray = None
+                frame_count = 0
+                logger.debug("CV feeder: video looped")
+                continue
+
+            frame_count += 1
+
+            # Convert to grayscale in executor
+            gray = await loop.run_in_executor(
+                None, lambda f=frame: cv2.cvtColor(f, cv2.COLOR_BGR2GRAY)
+            )
+
+            # Need a previous frame to compute optical flow
+            if prev_gray is None:
+                prev_gray = gray
+                continue
+
+            # Only run the estimator on every Nth frame
+            if frame_count % frames_per_sample != 0:
+                prev_gray = gray
+                continue
+
+            try:
+                pg, cg = prev_gray, gray
+                reading = await loop.run_in_executor(
+                    None,
+                    lambda: estimate_density(
+                        prev_gray=pg,
+                        curr_gray=cg,
+                        zone=zone,
+                        zone_capacity=zone_capacity,
+                        camera_id=camera_id,
+                    ),
+                )
+                doc = _reading_to_doc(reading)
+                await loop.run_in_executor(
+                    None, lambda d=doc: es.index(index="crowd-stream", document=d)
+                )
+                readings_done += 1
+                logger.debug(
+                    "CV feeder: zone=%s density=%.3f headcount=%d",
+                    reading.zone, reading.density, reading.headcount,
+                )
+                if readings_done % 10 == 0:
+                    logger.info("CV feeder: %d readings written to crowd-stream", readings_done)
+            except Exception as e:
+                logger.error("CV feeder estimate/index failed: %s", e)
+
+            prev_gray = gray
+
+            # Yield to the event loop; pace writes to once per interval
+            await asyncio.sleep(write_interval_seconds)
+
+    except asyncio.CancelledError:
+        logger.info("CV feeder cancelled after %d readings", readings_done)
+        raise
+    finally:
+        await loop.run_in_executor(None, cap.release)
 
 
 def _parse_args() -> argparse.Namespace:

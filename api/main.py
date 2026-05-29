@@ -97,16 +97,20 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error("Startup index setup failed: %s", e)
 
-    traffic_task  = asyncio.create_task(_traffic_feeder_loop(),  name="traffic-feeder")
+    from cv.feeder import run_cv_feeder_async
+
+    traffic_task   = asyncio.create_task(_traffic_feeder_loop(),   name="traffic-feeder")
     sentiment_task = asyncio.create_task(_sentiment_feeder_loop(), name="sentiment-feeder")
-    logger.info("Background feeders scheduled")
+    cv_task        = asyncio.create_task(run_cv_feeder_async(),    name="cv-feeder")
+    logger.info("Background feeders scheduled (traffic, sentiment, cv)")
 
     yield
 
     traffic_task.cancel()
     sentiment_task.cancel()
+    cv_task.cancel()
     try:
-        await asyncio.gather(traffic_task, sentiment_task, return_exceptions=True)
+        await asyncio.gather(traffic_task, sentiment_task, cv_task, return_exceptions=True)
     except Exception:
         pass
     logger.info("Background feeders stopped")
