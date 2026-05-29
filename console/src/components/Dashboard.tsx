@@ -215,7 +215,7 @@ export function Dashboard() {
       }}>
 
         {/* ── Col 1: Stadium (50%) + Camera (50%) ─────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, overflow: 'visible' }}>
           {/* Zone pills */}
           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', flexShrink: 0 }}>
             {STADIUM_ZONES.map(({ id, label }) => (
@@ -240,14 +240,14 @@ export function Dashboard() {
           {/* Stadium map card — 50% of column height */}
           <div style={{
             background: '#0d0d2a', border: '1px solid #1e1e3a', borderRadius: 8,
-            padding: '8px 10px',
+            padding: '8px 10px 16px',
             flex: '1 1 0', minHeight: 0, overflow: 'visible',
             display: 'flex', flexDirection: 'column',
           }}>
             <div style={{ ...LABEL_STYLE, marginBottom: 6 }}>
               Stadium Overview · Click Zone to Assess
             </div>
-            <div style={{ flex: 1, minHeight: 0, overflow: 'visible' }}>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'visible', height: '100%' }}>
               <StadiumMap
                 selectedZone={selectedZone}
                 zoneSeverity={zoneSeverity}

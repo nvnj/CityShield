@@ -1,13 +1,13 @@
 import type { LatestSignals } from '../types'
 
-// FIX 2: viewBox "0 0 200 150" — arc center (100,100), r=80
-// Text at y=125 (value) and y=142 (label) — both inside viewBox
-// FIX 3: uses strokeDashoffset on <circle> for smooth animated arc
+// viewBox "0 0 200 115"
+// Arc center cy=72, r=55 → top half arc spans y=17 to y=72, text y=88 and y=104.
+// Aspect ratio 200:115 = 1.74 → card needs only 115/200 × card_width height.
+// Uses strokeDashoffset on <circle> for smooth animated arc.
 
-const R      = 80
-const STROKE = 12
-// Semicircle circumference: half of full circle
-const CIRC   = Math.PI * R   // ≈ 251.3
+const R      = 55
+const STROKE = 9
+const CIRC   = Math.PI * R   // semicircle circumference ≈ 172.8
 
 interface GaugeProps {
   pct: number          // 0–1, defaults to 0 if undefined/null
@@ -33,7 +33,7 @@ function RingGauge({ pct, color, label, valueText, subText, subIsAlert }: GaugeP
       display: 'flex',
       flexDirection: 'column',
       minHeight: 0,
-      overflow: 'visible',
+      overflow: 'hidden',
     }}>
       {/* Card label */}
       <div style={{
@@ -48,56 +48,53 @@ function RingGauge({ pct, color, label, valueText, subText, subIsAlert }: GaugeP
         {label}
       </div>
 
-      {/* FIX 2: single SVG contains arc + value text + sub text */}
-      <div style={{ display: 'flex', justifyContent: 'center', flex: 1, alignItems: 'center' }}>
+      {/* Single SVG: arc + value + label — all inside viewBox, scales with card width */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
         <svg
-          viewBox="0 0 200 150"
-          width="160"
-          style={{ display: 'block', overflow: 'visible' }}
+          viewBox="0 0 200 115"
+          width="100%"
+          style={{ display: 'block' }}
         >
-          {/* Track arc — static background semicircle */}
+          {/* Track arc — top semicircle, center (100,72), r=55, open side down */}
           <circle
-            cx="100" cy="100" r={R}
+            cx="100" cy="72" r={R}
             fill="none"
             stroke="#1e1e3a"
             strokeWidth={STROKE}
             strokeLinecap="round"
             strokeDasharray={`${CIRC} ${CIRC * 10}`}
-            // rotate -180° so arc starts at left (9 o'clock) sweeping to right
-            transform="rotate(-180 100 100)"
+            transform="rotate(-180 100 72)"
           />
-          {/* Value arc — animated via strokeDashoffset */}
+          {/* Value arc */}
           <circle
-            cx="100" cy="100" r={R}
+            cx="100" cy="72" r={R}
             fill="none"
             stroke={color}
             strokeWidth={STROKE}
             strokeLinecap="round"
             strokeDasharray={`${CIRC} ${CIRC * 10}`}
             strokeDashoffset={dashOffset}
-            transform="rotate(-180 100 100)"
-            style={{
-              transition: 'stroke-dashoffset 0.8s ease, stroke 0.3s ease',
-            }}
+            transform="rotate(-180 100 72)"
+            style={{ transition: 'stroke-dashoffset 0.8s ease, stroke 0.3s ease' }}
           />
-          {/* FIX 2: value text at y=125, inside viewBox */}
+          {/* Value — y=88, inside viewBox height 115 */}
           <text
-            x="100" y="122"
+            x="100" y="88"
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize="26"
+            fontSize="22"
             fontFamily="monospace"
             fontWeight="600"
             fill="#ffffff"
           >
             {valueText}
           </text>
-          {/* FIX 2: sub label at y=142, inside viewBox */}
+          {/* Sub label — y=104, inside viewBox height 115 */}
           <text
-            x="100" y="142"
+            x="100" y="104"
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize="11"
+            fontSize="10"
             fontFamily="monospace"
             fill={subIsAlert ? '#ef4444' : '#6a6a9a'}
           >
