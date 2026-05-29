@@ -47,7 +47,7 @@ export function CameraFeed({ density, zone }: Props) {
   const color = densityColor(density)
 
   return (
-    <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: '#000', borderRadius: 6, overflow: 'hidden' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#000', borderRadius: 6, overflow: 'hidden' }}>
       <video
         src="/crowd.mp4"
         autoPlay

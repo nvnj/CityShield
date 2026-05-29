@@ -50,7 +50,7 @@ export function AssessmentPanel({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
 
       {/* Severity + confidence */}
-      <div style={{ background: '#12122a', border: `1px solid ${assessment ? color + '55' : '#1e1e3a'}`, borderRadius: 8, padding: 14 }}>
+      <div style={{ background: '#0d0d2a', border: `1px solid ${assessment ? color + '55' : '#1e1e3a'}`, borderRadius: 8, padding: 14, flexShrink: 0 }}>
         {assessment ? (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
@@ -63,7 +63,7 @@ export function AssessmentPanel({
                 {sev.toUpperCase()}
               </span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 9, color: '#475569', fontFamily: 'monospace', marginBottom: 3 }}>
+                <div style={{ fontSize: 9, color: '#a0a0c0', fontFamily: 'monospace', marginBottom: 3 }}>
                   CONFIDENCE
                 </div>
                 <div style={{ height: 4, background: '#1e1e3a', borderRadius: 2, overflow: 'hidden' }}>
@@ -78,8 +78,8 @@ export function AssessmentPanel({
                 </div>
               </div>
             </div>
-            <div style={{ fontSize: 9, color: '#475569', fontFamily: 'monospace', marginBottom: 4 }}>
-              PRIMARY SIGNAL: <span style={{ color: '#94a3b8' }}>{assessment.primary_signal}</span>
+            <div style={{ fontSize: 9, color: '#a0a0c0', fontFamily: 'monospace', marginBottom: 4 }}>
+              PRIMARY SIGNAL: <span style={{ color: '#ffffff' }}>{assessment.primary_signal}</span>
             </div>
             <p style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
               {assessment.rationale}
@@ -97,7 +97,7 @@ export function AssessmentPanel({
                 <span style={{ fontSize: 11, color: '#475569', fontFamily: 'monospace' }}>Analyzing…</span>
               </div>
             ) : (
-              <span style={{ fontSize: 11, color: '#2a2a4a', fontFamily: 'monospace' }}>
+              <span style={{ fontSize: 11, color: '#6a6a9a', fontFamily: 'monospace' }}>
                 — No assessment —
               </span>
             )}
@@ -106,8 +106,8 @@ export function AssessmentPanel({
       </div>
 
       {/* Response plan */}
-      <div style={{ background: '#12122a', border: '1px solid #1e1e3a', borderRadius: 8, padding: 14, flex: 1, overflow: 'hidden' }}>
-        <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
+      <div style={{ background: '#0d0d2a', border: '1px solid #1e1e3a', borderRadius: 8, padding: 14, flex: 1, overflow: 'auto', minHeight: 0 }}>
+        <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#6a6a9a', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 8 }}>
           Response Plan
         </div>
         {plan ? (
@@ -130,7 +130,7 @@ export function AssessmentPanel({
                   <li key={a.step} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                     <span style={{
                       flexShrink: 0, width: 18, height: 18, borderRadius: '50%',
-                      background: '#1e1e3a', color: '#94a3b8',
+                      background: '#1e1e3a', color: '#ffffff',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 9, fontFamily: 'monospace', fontWeight: 'bold', marginTop: 1,
                     }}>
@@ -163,7 +163,7 @@ export function AssessmentPanel({
             )}
           </>
         ) : (
-          <div style={{ fontSize: 11, color: '#2a2a4a', fontFamily: 'monospace' }}>
+          <div style={{ fontSize: 11, color: '#6a6a9a', fontFamily: 'monospace' }}>
             {loading ? 'Generating plan…' : '— No plan yet —'}
           </div>
         )}
@@ -171,8 +171,8 @@ export function AssessmentPanel({
 
       {/* Action bar */}
       {packet && (
-        <div style={{ background: '#12122a', border: '1px solid #1e1e3a', borderRadius: 8, padding: 12 }}>
-          <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>
+        <div style={{ background: '#0d0d2a', border: '1px solid #1e1e3a', borderRadius: 8, padding: 12, flexShrink: 0 }}>
+          <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#6a6a9a', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 6 }}>
             Operator Action
           </div>
           {actionDone ? (

@@ -20,6 +20,10 @@ const SEV_BG: Record<Severity, string> = {
   severe:        '#3d0a0a',
 }
 
+const HEADER_H  = 52
+const FOOTER_H  = 32
+const SECTION_H = `calc(100vh - ${HEADER_H}px - ${FOOTER_H}px)`
+
 function useCountdown(targetSeconds: number, running: boolean) {
   const [remaining, setRemaining] = useState(targetSeconds)
   useEffect(() => {
@@ -29,6 +33,15 @@ function useCountdown(targetSeconds: number, running: boolean) {
     return () => clearInterval(id)
   }, [targetSeconds, running])
   return remaining
+}
+
+const LABEL_STYLE: React.CSSProperties = {
+  fontSize: 11,
+  fontFamily: 'monospace',
+  color: '#6a6a9a',
+  textTransform: 'uppercase',
+  letterSpacing: '2px',
+  flexShrink: 0,
 }
 
 export function Dashboard() {
@@ -49,21 +62,14 @@ export function Dashboard() {
   const fetchSignals = useCallback(async (zone: string) => {
     setSigLoading(true)
     try {
-      const s = await getLatestSignals(zone)
-      setSignals(s)
-    } catch {
-      // keep stale on error
-    } finally {
+      setSignals(await getLatestSignals(zone))
+    } catch { /* keep stale */ } finally {
       setSigLoading(false)
     }
   }, [])
 
-  // Fetch signals whenever zone changes
-  useEffect(() => {
-    fetchSignals(selectedZone)
-  }, [selectedZone, fetchSignals])
+  useEffect(() => { fetchSignals(selectedZone) }, [selectedZone, fetchSignals])
 
-  // Auto-refresh signals every 30s
   useEffect(() => {
     if (!autoRefresh) return
     const id = setInterval(() => fetchSignals(selectedZone), 30_000)
@@ -72,19 +78,14 @@ export function Dashboard() {
 
   const handleAssess = useCallback(async (zone?: string) => {
     const z = zone ?? selectedZone
-    setLoading(true)
-    setError(null)
-    setActionDone(false)
+    setLoading(true); setError(null); setActionDone(false)
     try {
       const r = await runAssessment(z)
       setResult(r)
-      // Refresh signals after assessment
       fetchSignals(z)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }, [selectedZone, fetchSignals])
 
   const handleZoneClick = useCallback((zoneId: string) => {
@@ -102,19 +103,17 @@ export function Dashboard() {
     }
   }, [result, actionNote])
 
-  // Build zone severity map from the current result's zone
   const zoneSeverity: Record<string, Severity> = {}
-  if (result?.assessment && result.zone) {
-    zoneSeverity[result.zone] = result.assessment.severity
-  }
+  if (result?.assessment && result.zone) zoneSeverity[result.zone] = result.assessment.severity
 
-  const sev = result?.assessment?.severity ?? null
+  const sev      = result?.assessment?.severity ?? null
   const sevColor = sev ? SEV_COLOR[sev] : '#2a2a4a'
-  const sevBg = sev ? SEV_BG[sev] : '#12122a'
+  const sevBg    = sev ? SEV_BG[sev]   : '#12122a'
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
+      overflow: 'hidden',
       background: '#0a0a1a',
       backgroundImage: 'linear-gradient(rgba(74,158,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(74,158,255,0.03) 1px, transparent 1px)',
       backgroundSize: '40px 40px',
@@ -123,53 +122,42 @@ export function Dashboard() {
       fontFamily: 'system-ui, -apple-system, sans-serif',
     }}>
 
-      {/* ── Header ─────────────────────────────────────────── */}
+      {/* ── Header ──────────────────────────────────────── */}
       <header style={{
+        height: HEADER_H,
         background: '#0d0d20',
         borderBottom: '1px solid #1e1e3a',
-        padding: '0 24px',
-        height: 52,
+        padding: '0 20px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexShrink: 0,
+        position: 'relative',
         zIndex: 10,
       }}>
-        {/* Left: logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
             width: 8, height: 8, borderRadius: '50%', background: '#ef4444',
             display: 'inline-block', animation: 'pulse 1.2s ease-in-out infinite',
-            flexShrink: 0,
           }} />
-          <span style={{
-            fontFamily: 'monospace', fontWeight: 'bold', fontSize: 15,
-            color: '#e2e8f0', letterSpacing: '0.2em',
-          }}>
+          <span style={{ fontFamily: 'monospace', fontWeight: 'bold', fontSize: 15, color: '#ffffff', letterSpacing: '0.2em' }}>
             CITYSHIELD
           </span>
-          <span style={{
-            fontSize: 10, color: '#2a2a5a',
-            fontFamily: 'monospace', marginLeft: 4,
-          }}>
-            v0.1
-          </span>
+          <span style={{ fontSize: 10, color: '#3a3a6a', fontFamily: 'monospace' }}>v0.1</span>
         </div>
 
-        {/* Center: title */}
         <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
-          <span style={{ fontSize: 12, color: '#475569', fontFamily: 'monospace', letterSpacing: '0.08em' }}>
+          <span style={{ fontSize: 12, color: '#6a6a9a', fontFamily: 'monospace', letterSpacing: '0.08em' }}>
             World Cup 2026 · Operations Console
           </span>
         </div>
 
-        {/* Right: severity + controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {sev && (
             <span style={{
-              fontFamily: 'monospace', fontWeight: 'bold', fontSize: 13,
+              fontFamily: 'monospace', fontWeight: 'bold', fontSize: 12,
               background: sevBg, color: sevColor,
-              padding: '4px 14px', borderRadius: 5,
+              padding: '4px 12px', borderRadius: 4,
               border: `1px solid ${sevColor}55`,
               ...(sev === 'severe' ? { animation: 'sevpulse 1.2s ease-in-out infinite' } : {}),
             }}>
@@ -180,12 +168,11 @@ export function Dashboard() {
             onClick={() => handleAssess()}
             disabled={loading}
             style={{
-              padding: '5px 16px', fontSize: 11,
-              fontFamily: 'monospace', fontWeight: 'bold',
+              padding: '5px 16px', fontSize: 11, fontFamily: 'monospace', fontWeight: 'bold',
               background: loading ? '#1e1e3a' : '#4a9eff',
-              color: loading ? '#475569' : '#0a0a1a',
-              border: 'none', borderRadius: 4, cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'background 0.2s',
+              color: loading ? '#6a6a9a' : '#0a0a1a',
+              border: '1px solid #1e3a5f',
+              borderRadius: 4, cursor: loading ? 'not-allowed' : 'pointer',
             }}
           >
             {loading ? 'Analyzing…' : 'Run Assessment'}
@@ -193,11 +180,10 @@ export function Dashboard() {
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             style={{
-              padding: '5px 12px', fontSize: 10,
-              fontFamily: 'monospace',
-              background: autoRefresh ? '#0f1f3d' : 'transparent',
-              color: autoRefresh ? '#4a9eff' : '#475569',
-              border: `1px solid ${autoRefresh ? '#4a9eff55' : '#1e1e3a'}`,
+              padding: '5px 12px', fontSize: 10, fontFamily: 'monospace',
+              background: autoRefresh ? '#1e3a5f' : 'transparent',
+              color: autoRefresh ? '#ffffff' : '#6a6a9a',
+              border: `1px solid ${autoRefresh ? '#4a9eff' : '#1e1e3a'}`,
               borderRadius: 4, cursor: 'pointer',
             }}
           >
@@ -206,42 +192,44 @@ export function Dashboard() {
         </div>
       </header>
 
-      {/* ── Error banner ───────────────────────────────────── */}
+      {/* ── Error banner (zero-height when absent) ──────── */}
       {error && (
         <div style={{
           background: '#3d0a0a', borderBottom: '1px solid #ef444466',
-          padding: '6px 24px', fontSize: 11, color: '#fca5a5', fontFamily: 'monospace',
+          padding: '4px 20px', fontSize: 11, color: '#fca5a5',
+          fontFamily: 'monospace', flexShrink: 0,
         }}>
           {error}
         </div>
       )}
 
-      {/* ── Three-column main ──────────────────────────────── */}
+      {/* ── Three-column main ────────────────────────────── */}
       <div style={{
-        flex: 1,
+        height: SECTION_H,
         display: 'grid',
-        gridTemplateColumns: '40% 30% 30%',
-        gap: 12,
-        padding: '12px 16px',
+        gridTemplateColumns: '35% 30% 35%',
+        gap: 10,
+        padding: '10px 14px',
         overflow: 'hidden',
         minHeight: 0,
       }}>
 
-        {/* ── Column 1: Stadium + Camera ─────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
-          {/* Zone selector pills */}
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+        {/* ── Col 1: Stadium (50%) + Camera (50%) ─────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, overflow: 'hidden' }}>
+          {/* Zone pills */}
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', flexShrink: 0 }}>
             {STADIUM_ZONES.map(({ id, label }) => (
               <button
                 key={id}
                 onClick={() => handleZoneClick(id)}
                 style={{
-                  fontSize: 9, fontFamily: 'monospace', padding: '3px 8px',
-                  borderRadius: 3, cursor: 'pointer', border: '1px solid',
-                  background: selectedZone === id ? '#0f1f3d' : 'transparent',
-                  color: selectedZone === id ? '#4a9eff' : '#475569',
-                  borderColor: selectedZone === id ? '#4a9eff55' : '#1e1e3a',
+                  fontSize: 10, fontFamily: 'monospace', padding: '3px 9px',
+                  borderRadius: 4, cursor: 'pointer',
+                  background: selectedZone === id ? '#1e3a5f' : 'transparent',
+                  color:      selectedZone === id ? '#ffffff' : '#6a6a9a',
+                  border:     `1px solid ${selectedZone === id ? '#4a9eff' : '#1e1e3a'}`,
                   transition: 'all 0.15s',
+                  fontWeight: selectedZone === id ? 600 : 400,
                 }}
               >
                 {label}
@@ -249,75 +237,90 @@ export function Dashboard() {
             ))}
           </div>
 
-          {/* Stadium SVG */}
-          <div style={{ background: '#12122a', border: '1px solid #1e1e3a', borderRadius: 8, padding: 10, flex: '0 0 auto' }}>
-            <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#2a2a5a', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>
+          {/* Stadium map card — 50% of column height */}
+          <div style={{
+            background: '#0d0d2a', border: '1px solid #1e1e3a', borderRadius: 8,
+            padding: '8px 10px',
+            flex: '1 1 0', minHeight: 0, overflow: 'hidden',
+            display: 'flex', flexDirection: 'column',
+          }}>
+            <div style={{ ...LABEL_STYLE, marginBottom: 6 }}>
               Stadium Overview · Click Zone to Assess
             </div>
-            <StadiumMap
-              selectedZone={selectedZone}
-              zoneSeverity={zoneSeverity}
-              onZoneClick={handleZoneClick}
-            />
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              <StadiumMap
+                selectedZone={selectedZone}
+                zoneSeverity={zoneSeverity}
+                onZoneClick={handleZoneClick}
+              />
+            </div>
           </div>
 
-          {/* Camera feed */}
-          <div style={{ background: '#12122a', border: '1px solid #1e1e3a', borderRadius: 8, padding: 10, flex: 1 }}>
-            <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#2a2a5a', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>
+          {/* Camera feed card — 50% of column height */}
+          <div style={{
+            background: '#0d0d2a', border: '1px solid #1e1e3a', borderRadius: 8,
+            padding: '8px 10px',
+            flex: '1 1 0', minHeight: 0, overflow: 'hidden',
+            display: 'flex', flexDirection: 'column',
+          }}>
+            <div style={{ ...LABEL_STYLE, marginBottom: 6 }}>
               Computer Vision Feed
             </div>
-            <CameraFeed
-              density={signals?.density ?? 0}
-              zone={formatZone(selectedZone)}
-            />
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              <CameraFeed
+                density={signals?.density ?? 0}
+                zone={formatZone(selectedZone)}
+              />
+            </div>
           </div>
         </div>
 
-        {/* ── Column 2: Signal Gauges ────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
-          <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#2a2a5a', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        {/* ── Col 2: Signal gauges ─────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, overflow: 'hidden' }}>
+          <div style={{ ...LABEL_STYLE, flexShrink: 0 }}>
             Live Signals · {formatZone(selectedZone)}
-            {sigLoading && (
-              <span style={{ color: '#4a9eff', marginLeft: 8 }}>↻</span>
-            )}
+            {sigLoading && <span style={{ color: '#4a9eff', marginLeft: 8 }}>↻</span>}
           </div>
-          <SignalGauges signals={signals} loading={sigLoading} />
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <SignalGauges signals={signals} loading={sigLoading} />
+          </div>
         </div>
 
-        {/* ── Column 3: Assessment ──────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
-          <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#2a2a5a', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        {/* ── Col 3: Assessment panel ───────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, overflow: 'hidden' }}>
+          <div style={{ ...LABEL_STYLE, flexShrink: 0 }}>
             Situational Assessment
           </div>
-          <AssessmentPanel
-            result={result}
-            loading={loading}
-            onApprove={() => handleAction('approve')}
-            onEdit={() => handleAction('edit')}
-            onDismiss={() => handleAction('dismiss')}
-            actionDone={actionDone}
-            actionNote={actionNote}
-            onNoteChange={setActionNote}
-          />
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <AssessmentPanel
+              result={result}
+              loading={loading}
+              onApprove={() => handleAction('approve')}
+              onEdit={() => handleAction('edit')}
+              onDismiss={() => handleAction('dismiss')}
+              actionDone={actionDone}
+              actionNote={actionNote}
+              onNoteChange={setActionNote}
+            />
+          </div>
         </div>
       </div>
 
-      {/* ── Footer status bar ─────────────────────────────── */}
+      {/* ── Footer ──────────────────────────────────────── */}
       <footer style={{
+        height: FOOTER_H,
         background: '#0d0d20',
         borderTop: '1px solid #1e1e3a',
-        padding: '5px 20px',
+        padding: '0 20px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         flexShrink: 0,
       }}>
-        <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#2a2a5a' }}>
-          {result
-            ? `INC ${result.incident_id.slice(0, 8)}…`
-            : 'NO INCIDENT'}
+        <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#3a3a6a' }}>
+          {result ? `INC ${result.incident_id.slice(0, 8)}…` : 'NO INCIDENT'}
         </span>
-        <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#2a2a5a' }}>
+        <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#3a3a6a' }}>
           {result
             ? `${formatZone(result.zone ?? selectedZone)} · ${result.window_minutes}m · ${new Date(result.pipeline_completed_at).toLocaleTimeString()}`
             : `Zone: ${formatZone(selectedZone)}`}

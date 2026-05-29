@@ -72,8 +72,9 @@ const ZONE_ARCS: Record<string, [number, number]> = {
 function labelPos(startDeg: number, endDeg: number): { x: number; y: number } {
   const mid = (startDeg + endDeg) / 2
   const r = mid * (Math.PI / 180)
-  const mr = (IRX + ORX) / 2 + 5
-  const me = (IRY + ORY) / 2 + 5
+  // Place label at 70% between inner and outer radii (slightly inward)
+  const mr = IRX + (ORX - IRX) * 0.6
+  const me = IRY + (ORY - IRY) * 0.6
   return { x: CX + mr * Math.cos(r), y: CY + me * Math.sin(r) }
 }
 
@@ -91,7 +92,7 @@ const SEVERITY_STROKE: Record<Severity, string> = {
 export function StadiumMap({ selectedZone, zoneSeverity = {}, onZoneClick }: Props) {
   return (
     <svg
-      viewBox="0 0 400 320"
+      viewBox="0 0 400 330"
       width="100%"
       style={{ display: 'block' }}
     >
@@ -157,16 +158,16 @@ export function StadiumMap({ selectedZone, zoneSeverity = {}, onZoneClick }: Pro
         const { x, y } = labelPos(s, e)
         const isSelected = selectedZone === id
         const sev = zoneSeverity[id]
-        const color = sev ? SEVERITY_STROKE[sev] : (isSelected ? '#4a9eff' : '#6b7280')
+        const color = sev ? SEVERITY_STROKE[sev] : (isSelected ? '#4a9eff' : '#c0c0e0')
         return (
           <text
             key={id}
             x={x} y={y}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize="9.5"
+            fontSize="10"
             fontFamily="monospace"
-            fontWeight={isSelected ? 'bold' : 'normal'}
+            fontWeight={isSelected ? 'bold' : '600'}
             fill={color}
             style={{ pointerEvents: 'none', userSelect: 'none' }}
           >
