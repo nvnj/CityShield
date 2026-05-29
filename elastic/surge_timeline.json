@@ -1,0 +1,256 @@
+{
+  "description": "Pre-recorded surge timeline for CityShield demo. Replayed by elastic/ingest.py --replay and cv/feeder.py --replay. Timeline spans ~90 seconds: 30s baseline, 30s escalation, 30s severe surge.",
+  "zone": "gate_a",
+  "events": [
+    {
+      "t_offset_seconds": 0,
+      "stream": "crowd",
+      "density": 0.31,
+      "headcount": 124,
+      "motion_variance": 0.0021,
+      "camera_id": "cam-01",
+      "label": "baseline"
+    },
+    {
+      "t_offset_seconds": 0,
+      "stream": "traffic",
+      "road": "Gate_C_Approach",
+      "vehicle_count": 35,
+      "speed_avg": 28.4,
+      "incident": false,
+      "label": "baseline"
+    },
+    {
+      "t_offset_seconds": 0,
+      "stream": "sentiment",
+      "sentiment_score": 0.62,
+      "keywords": ["excited", "kickoff", "worldcup"],
+      "label": "baseline"
+    },
+    {
+      "t_offset_seconds": 10,
+      "stream": "crowd",
+      "density": 0.35,
+      "headcount": 140,
+      "motion_variance": 0.0028,
+      "camera_id": "cam-01",
+      "label": "baseline"
+    },
+    {
+      "t_offset_seconds": 10,
+      "stream": "traffic",
+      "road": "Gate_C_Approach",
+      "vehicle_count": 42,
+      "speed_avg": 22.1,
+      "incident": false,
+      "label": "baseline"
+    },
+    {
+      "t_offset_seconds": 10,
+      "stream": "sentiment",
+      "sentiment_score": 0.55,
+      "keywords": ["crowd", "amazing", "gooo"],
+      "label": "baseline"
+    },
+    {
+      "t_offset_seconds": 20,
+      "stream": "crowd",
+      "density": 0.38,
+      "headcount": 152,
+      "motion_variance": 0.0035,
+      "camera_id": "cam-01",
+      "label": "baseline"
+    },
+    {
+      "t_offset_seconds": 20,
+      "stream": "traffic",
+      "road": "Gate_C_Approach",
+      "vehicle_count": 51,
+      "speed_avg": 15.7,
+      "incident": false,
+      "label": "baseline"
+    },
+    {
+      "t_offset_seconds": 20,
+      "stream": "sentiment",
+      "sentiment_score": 0.48,
+      "keywords": ["waiting", "line", "gate"],
+      "label": "baseline"
+    },
+    {
+      "t_offset_seconds": 30,
+      "stream": "crowd",
+      "density": 0.55,
+      "headcount": 220,
+      "motion_variance": 0.0089,
+      "camera_id": "cam-01",
+      "label": "escalating"
+    },
+    {
+      "t_offset_seconds": 30,
+      "stream": "traffic",
+      "road": "Gate_C_Approach",
+      "vehicle_count": 78,
+      "speed_avg": 7.3,
+      "incident": false,
+      "label": "escalating"
+    },
+    {
+      "t_offset_seconds": 30,
+      "stream": "sentiment",
+      "sentiment_score": -0.18,
+      "keywords": ["crowded", "blocked", "stuck"],
+      "label": "escalating"
+    },
+    {
+      "t_offset_seconds": 40,
+      "stream": "crowd",
+      "density": 0.67,
+      "headcount": 268,
+      "motion_variance": 0.0142,
+      "camera_id": "cam-01",
+      "label": "escalating"
+    },
+    {
+      "t_offset_seconds": 40,
+      "stream": "traffic",
+      "road": "Gate_C_Approach",
+      "vehicle_count": 95,
+      "speed_avg": 4.8,
+      "incident": true,
+      "label": "escalating"
+    },
+    {
+      "t_offset_seconds": 40,
+      "stream": "sentiment",
+      "sentiment_score": -0.41,
+      "keywords": ["stuck", "blocked", "help"],
+      "label": "escalating"
+    },
+    {
+      "t_offset_seconds": 50,
+      "stream": "crowd",
+      "density": 0.74,
+      "headcount": 296,
+      "motion_variance": 0.0201,
+      "camera_id": "cam-01",
+      "label": "escalating"
+    },
+    {
+      "t_offset_seconds": 50,
+      "stream": "traffic",
+      "road": "Gate_C_Approach",
+      "vehicle_count": 108,
+      "speed_avg": 3.2,
+      "incident": true,
+      "label": "escalating"
+    },
+    {
+      "t_offset_seconds": 50,
+      "stream": "sentiment",
+      "sentiment_score": -0.58,
+      "keywords": ["unsafe", "crowded", "panic"],
+      "label": "escalating"
+    },
+    {
+      "t_offset_seconds": 60,
+      "stream": "crowd",
+      "density": 0.92,
+      "headcount": 368,
+      "motion_variance": 0.0381,
+      "camera_id": "cam-01",
+      "label": "severe"
+    },
+    {
+      "t_offset_seconds": 60,
+      "stream": "traffic",
+      "road": "Gate_C_Approach",
+      "vehicle_count": 131,
+      "speed_avg": 2.1,
+      "incident": true,
+      "label": "severe"
+    },
+    {
+      "t_offset_seconds": 60,
+      "stream": "sentiment",
+      "sentiment_score": -0.80,
+      "keywords": ["panic", "emergency", "help", "crush"],
+      "label": "severe"
+    },
+    {
+      "t_offset_seconds": 70,
+      "stream": "crowd",
+      "density": 0.92,
+      "headcount": 368,
+      "motion_variance": 0.0412,
+      "camera_id": "cam-01",
+      "label": "severe"
+    },
+    {
+      "t_offset_seconds": 70,
+      "stream": "traffic",
+      "road": "Gate_C_Approach",
+      "vehicle_count": 138,
+      "speed_avg": 1.8,
+      "incident": true,
+      "label": "severe"
+    },
+    {
+      "t_offset_seconds": 70,
+      "stream": "sentiment",
+      "sentiment_score": -0.80,
+      "keywords": ["emergency", "crush", "unsafe", "panic"],
+      "label": "severe"
+    },
+    {
+      "t_offset_seconds": 80,
+      "stream": "crowd",
+      "density": 0.92,
+      "headcount": 370,
+      "motion_variance": 0.0398,
+      "camera_id": "cam-01",
+      "label": "severe"
+    },
+    {
+      "t_offset_seconds": 80,
+      "stream": "traffic",
+      "road": "Gate_C_Approach",
+      "vehicle_count": 135,
+      "speed_avg": 2.0,
+      "incident": true,
+      "label": "severe"
+    },
+    {
+      "t_offset_seconds": 80,
+      "stream": "sentiment",
+      "sentiment_score": -0.78,
+      "keywords": ["help", "panic", "emergency", "blocked"],
+      "label": "severe"
+    },
+    {
+      "t_offset_seconds": 90,
+      "stream": "crowd",
+      "density": 0.88,
+      "headcount": 352,
+      "motion_variance": 0.0355,
+      "camera_id": "cam-01",
+      "label": "severe"
+    },
+    {
+      "t_offset_seconds": 90,
+      "stream": "traffic",
+      "road": "Gate_C_Approach",
+      "vehicle_count": 129,
+      "speed_avg": 2.5,
+      "incident": true,
+      "label": "severe"
+    },
+    {
+      "t_offset_seconds": 90,
+      "stream": "sentiment",
+      "sentiment_score": -0.75,
+      "keywords": ["unsafe", "panic", "crush"],
+      "label": "severe"
+    }
+  ]
+}

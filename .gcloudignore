@@ -1,0 +1,9 @@
+.gcloudignore
+.git
+.gitignore
+console/
+node_modules/
+__pycache__/
+*.pyc
+.env
+.venv/
