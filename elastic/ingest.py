@@ -1,11 +1,12 @@
-"""Synthetic traffic and sentiment feeders for CityShield.
+"""Synthetic traffic, sentiment, and crowd feeders for CityShield.
 
 CLI usage:
-    uv run python -m elastic.ingest --mode traffic|sentiment|both [--duration-minutes N]
+    uv run python -m elastic.ingest --mode traffic|sentiment|both|crowd [--duration-minutes N]
     uv run python -m elastic.ingest --mode both --replay [--timeline PATH]
 """
 
 import argparse
+import asyncio
 import json
 import logging
 import random
@@ -30,8 +31,23 @@ _GEO_CENTERS = {
     "gate_a":        {"lat": 34.0141, "lon": -118.2879},
     "gate_b":        {"lat": 34.0138, "lon": -118.2871},
     "gate_c":        {"lat": 34.0135, "lon": -118.2865},
+    "gate_d":        {"lat": 34.0132, "lon": -118.2882},
+    "north_stand":   {"lat": 34.0148, "lon": -118.2873},
+    "south_stand":   {"lat": 34.0130, "lon": -118.2873},
     "concourse_main": {"lat": 34.0140, "lon": -118.2874},
     "transit_hub":   {"lat": 34.0145, "lon": -118.2890},
+}
+
+# Synthetic crowd zones — gate_a is real CV; these get synthetic density
+_SYNTHETIC_CROWD_ZONES = ["gate_b", "gate_c", "gate_d", "north_stand", "south_stand"]
+
+# Base densities per zone: gates similar to gate_a, stands lower (people seated)
+_ZONE_BASE_DENSITY: dict[str, float] = {
+    "gate_b":      0.55,
+    "gate_c":      0.50,
+    "gate_d":      0.48,
+    "north_stand": 0.35,
+    "south_stand": 0.33,
 }
 
 _POSITIVE_KEYWORDS = ["excited", "crowd", "kickoff", "soccer", "worldcup", "amazing", "gooo"]
@@ -104,6 +120,82 @@ def _baseline_sentiment(zone: str) -> dict:
         "source": "synthetic-baseline",
         "zone": zone,
     }
+
+
+def _synthetic_crowd_doc(zone: str) -> dict:
+    """Generate a synthetic crowd density doc for zones without real CV coverage."""
+    base = _ZONE_BASE_DENSITY.get(zone, 0.4)
+    density = round(max(0.0, min(1.0, base + random.uniform(-0.1, 0.1))), 3)
+    zone_capacity = 400
+    headcount = int(density * zone_capacity)
+    return {
+        "camera_id": f"synthetic-{zone}",
+        "timestamp": _now_iso(),
+        "zone": zone,
+        "density": density,
+        "headcount": headcount,
+        "motion_variance": round(random.uniform(0.001, 0.05), 5),
+        "source": "synthetic",
+    }
+
+
+def run_crowd_synthetic_feeder(duration_minutes: float = 0) -> None:
+    """Emit synthetic crowd docs for non-CV zones every 10 seconds.
+
+    gate_a is handled by the real CV estimator; this feeder covers
+    gate_b, gate_c, gate_d, north_stand, south_stand.
+    """
+    es = get_client()
+    setup_indices(es)
+
+    deadline = time.monotonic() + duration_minutes * 60 if duration_minutes > 0 else float("inf")
+    tick = 0
+
+    logger.info("Synthetic crowd feeder started: zones=%s", _SYNTHETIC_CROWD_ZONES)
+
+    while time.monotonic() < deadline:
+        for zone in _SYNTHETIC_CROWD_ZONES:
+            doc = _synthetic_crowd_doc(zone)
+            try:
+                es.index(index="crowd-stream", document=doc)
+                tick += 1
+            except Exception as e:
+                logger.error("Synthetic crowd index failed zone=%s: %s", zone, e)
+        if tick % (len(_SYNTHETIC_CROWD_ZONES) * 5) == 0 and tick > 0:
+            logger.info("Synthetic crowd feeder: %d docs indexed", tick)
+        time.sleep(10)
+
+    logger.info("Synthetic crowd feeder finished: %d total docs", tick)
+
+
+async def run_crowd_synthetic_feeder_async() -> None:
+    """Async version of the synthetic crowd feeder for FastAPI lifespan use."""
+    from elastic.client import get_client, setup_indices
+
+    loop = asyncio.get_running_loop()
+    es = await loop.run_in_executor(None, get_client)
+    await loop.run_in_executor(None, setup_indices, es)
+
+    tick = 0
+    logger.info("Async synthetic crowd feeder started: zones=%s", _SYNTHETIC_CROWD_ZONES)
+
+    try:
+        while True:
+            for zone in _SYNTHETIC_CROWD_ZONES:
+                doc = _synthetic_crowd_doc(zone)
+                try:
+                    await loop.run_in_executor(
+                        None, lambda d=doc: es.index(index="crowd-stream", document=d)
+                    )
+                    tick += 1
+                except Exception as e:
+                    logger.error("Async synthetic crowd index failed zone=%s: %s", zone, e)
+            if tick % (len(_SYNTHETIC_CROWD_ZONES) * 5) == 0 and tick > 0:
+                logger.info("Async synthetic crowd feeder: %d docs indexed", tick)
+            await asyncio.sleep(10)
+    except asyncio.CancelledError:
+        logger.info("Async synthetic crowd feeder cancelled after %d docs", tick)
+        raise
 
 
 def run_traffic_feeder(duration_minutes: float = 0) -> None:

@@ -3,6 +3,7 @@ import { useRef, useEffect } from 'react'
 interface Props {
   density: number
   zone: string
+  zoneId: string
 }
 
 const densityColor = (d: number) =>
@@ -32,7 +33,8 @@ function drawHeatmap(canvas: HTMLCanvasElement, density: number) {
   }
 }
 
-export function CameraFeed({ density, zone }: Props) {
+export function CameraFeed({ density, zone, zoneId }: Props) {
+  const isRealCV = zoneId === 'gate_a'
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -76,12 +78,12 @@ export function CameraFeed({ density, zone }: Props) {
       }}>
         <span style={{
           width: 6, height: 6, borderRadius: '50%',
-          background: '#ef4444',
+          background: isRealCV ? '#22c55e' : '#6a6a9a',
           display: 'inline-block',
-          animation: 'pulse 1s infinite',
+          animation: isRealCV ? 'pulse 1s infinite' : undefined,
         }} />
         <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#e2e8f0' }}>
-          CV Feed · {zone} · LIVE
+          {isRealCV ? 'CV ESTIMATE · LIVE' : 'SYNTHETIC · SIMULATED'} · {zone}
         </span>
       </div>
       {/* Density badge bottom-left */}

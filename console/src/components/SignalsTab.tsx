@@ -4,8 +4,7 @@ import {
 } from 'recharts'
 import { getSignals } from '../api'
 
-const ELASTIC_URL = import.meta.env.VITE_ELASTIC_URL ?? 'https://cityshield-de66e7.es.us-central1.gcp.elastic.cloud'
-const KIBANA_URL = ELASTIC_URL.replace('.es.', '.kb.')
+const KIBANA_URL = import.meta.env.VITE_KIBANA_URL ?? ''
 
 interface ChartRow { time: string; value: number }
 
@@ -157,15 +156,17 @@ export function SignalsTab() {
           >
             Refresh now
           </button>
-          <a
-            href={`${KIBANA_URL}/app/discover`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs px-3 py-1.5 rounded font-semibold"
-            style={{ background: '#1e3a5f', color: '#60a5fa' }}
-          >
-            Open Kibana →
-          </a>
+          {KIBANA_URL && (
+            <a
+              href={KIBANA_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs px-3 py-1.5 rounded font-semibold"
+              style={{ background: '#1e3a5f', color: '#60a5fa' }}
+            >
+              Open Kibana Dashboard →
+            </a>
+          )}
         </div>
       </div>
 
@@ -206,6 +207,22 @@ export function SignalsTab() {
         Dashed red lines = alert thresholds (density &gt; 0.75, vehicles &gt; 80, sentiment &lt; −0.5).
         Auto-refreshes every 30s. Run{' '}
         <code style={{ color: '#94a3b8' }}>make run-feeders</code> to populate streams.
+      </div>
+
+      {/* Elastic badge */}
+      <div className="flex justify-end">
+        <div
+          className="flex items-center gap-2 text-xs px-3 py-1.5 rounded"
+          style={{ background: '#111827', border: '1px solid #1f2937' }}
+        >
+          <svg width="14" height="14" viewBox="0 0 32 32" fill="none">
+            <path d="M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14 14-6.268 14-14S23.732 2 16 2z" fill="#00BFB3" opacity=".15"/>
+            <path d="M8 17.5l8 4 8-4v-3l-8 4-8-4v3zm0-5l8 4 8-4-8-4-8 4z" fill="#00BFB3"/>
+          </svg>
+          <span style={{ color: '#00BFB3', fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+            Powered by Elasticsearch
+          </span>
+        </div>
       </div>
     </div>
   )

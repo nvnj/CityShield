@@ -120,6 +120,8 @@ interface Props {
 }
 
 export function SignalGauges({ signals }: Props) {
+  console.log('signals data:', signals)
+
   const density   = signals?.density         ?? 0
   const speed     = signals?.speed_avg       ?? 0
   const sentiment = signals?.sentiment_score ?? 0

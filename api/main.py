@@ -98,19 +98,22 @@ async def lifespan(app: FastAPI):
         logger.error("Startup index setup failed: %s", e)
 
     from cv.feeder import run_cv_feeder_async
+    from elastic.ingest import run_crowd_synthetic_feeder_async
 
-    traffic_task   = asyncio.create_task(_traffic_feeder_loop(),   name="traffic-feeder")
-    sentiment_task = asyncio.create_task(_sentiment_feeder_loop(), name="sentiment-feeder")
-    cv_task        = asyncio.create_task(run_cv_feeder_async(),    name="cv-feeder")
-    logger.info("Background feeders scheduled (traffic, sentiment, cv)")
+    traffic_task   = asyncio.create_task(_traffic_feeder_loop(),              name="traffic-feeder")
+    sentiment_task = asyncio.create_task(_sentiment_feeder_loop(),            name="sentiment-feeder")
+    cv_task        = asyncio.create_task(run_cv_feeder_async(),               name="cv-feeder")
+    crowd_task     = asyncio.create_task(run_crowd_synthetic_feeder_async(),  name="crowd-synthetic-feeder")
+    logger.info("Background feeders scheduled (traffic, sentiment, cv/gate_a, crowd-synthetic)")
 
     yield
 
     traffic_task.cancel()
     sentiment_task.cancel()
     cv_task.cancel()
+    crowd_task.cancel()
     try:
-        await asyncio.gather(traffic_task, sentiment_task, cv_task, return_exceptions=True)
+        await asyncio.gather(traffic_task, sentiment_task, cv_task, crowd_task, return_exceptions=True)
     except Exception:
         pass
     logger.info("Background feeders stopped")

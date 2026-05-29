@@ -201,13 +201,14 @@ _VIDEO_PATH = Path(__file__).parent / "crowd.mp4"
 
 
 async def run_cv_feeder_async(
-    zone: str = "gate_a",
     zone_capacity: int = 400,
-    camera_id: str = "cam-01",
     write_interval_seconds: int = 10,
     frames_per_sample: int = 10,
 ) -> None:
     """Async CV feeder for background use from the FastAPI lifespan.
+
+    Writes ONLY to gate_a — the one zone with real video footage.
+    All other zones get synthetic density from elastic/ingest.py.
 
     Loops crowd.mp4 indefinitely, processes every Nth frame with the optical-flow
     estimator, and writes density readings to crowd-stream every
@@ -216,6 +217,9 @@ async def run_cv_feeder_async(
 
     Silently skips if the video file does not exist — the API still starts cleanly.
     """
+    # Fixed: only zone with real video coverage
+    zone = "gate_a"
+    camera_id = "cam-01"
     if not _VIDEO_PATH.exists():
         logger.warning(
             "CV feeder: video not found at %s — skipping crowd-stream writes", _VIDEO_PATH

@@ -5,6 +5,9 @@ import { StadiumMap, STADIUM_ZONES } from './StadiumMap'
 import { CameraFeed } from './CameraFeed'
 import { SignalGauges } from './SignalGauges'
 import { AssessmentPanel } from './AssessmentPanel'
+import { SignalsTab } from './SignalsTab'
+
+type Tab = 'operations' | 'signals'
 
 const formatZone = (z: string) =>
   z.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
@@ -45,6 +48,7 @@ const LABEL_STYLE: React.CSSProperties = {
 }
 
 export function Dashboard() {
+  const [activeTab, setActiveTab] = useState<Tab>('operations')
   const [selectedZone, setSelectedZone] = useState<string>('gate_a')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -62,8 +66,12 @@ export function Dashboard() {
   const fetchSignals = useCallback(async (zone: string) => {
     setSigLoading(true)
     try {
-      setSignals(await getLatestSignals(zone))
-    } catch { /* keep stale */ } finally {
+      const s = await getLatestSignals(zone)
+      console.log('fetchSignals response:', s)
+      setSignals(s)
+    } catch (e) {
+      console.error('fetchSignals error:', e)
+    } finally {
       setSigLoading(false)
     }
   }, [])
@@ -146,10 +154,24 @@ export function Dashboard() {
           <span style={{ fontSize: 10, color: '#3a3a6a', fontFamily: 'monospace' }}>v0.1</span>
         </div>
 
-        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
-          <span style={{ fontSize: 12, color: '#6a6a9a', fontFamily: 'monospace', letterSpacing: '0.08em' }}>
-            World Cup 2026 · Operations Console
-          </span>
+        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4 }}>
+          {(['operations', 'signals'] as Tab[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                fontSize: 11, fontFamily: 'monospace', fontWeight: activeTab === tab ? 700 : 400,
+                padding: '4px 14px', borderRadius: 4, cursor: 'pointer',
+                background: activeTab === tab ? '#1e3a5f' : 'transparent',
+                color: activeTab === tab ? '#ffffff' : '#6a6a9a',
+                border: `1px solid ${activeTab === tab ? '#4a9eff' : '#1e1e3a'}`,
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                transition: 'all 0.15s',
+              }}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -193,7 +215,7 @@ export function Dashboard() {
       </header>
 
       {/* ── Error banner (zero-height when absent) ──────── */}
-      {error && (
+      {error && activeTab === 'operations' && (
         <div style={{
           background: '#3d0a0a', borderBottom: '1px solid #ef444466',
           padding: '4px 20px', fontSize: 11, color: '#fca5a5',
@@ -203,10 +225,17 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* ── Three-column main ────────────────────────────── */}
+      {/* ── Signals tab ──────────────────────────────────── */}
+      {activeTab === 'signals' && (
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 20px' }}>
+          <SignalsTab />
+        </div>
+      )}
+
+      {/* ── Three-column ops main ────────────────────────── */}
       <div style={{
-        height: SECTION_H,
-        display: 'grid',
+        height: activeTab === 'operations' ? SECTION_H : 0,
+        display: activeTab === 'operations' ? 'grid' : 'none',
         gridTemplateColumns: '35% 30% 35%',
         gap: 10,
         padding: '10px 14px',
@@ -270,6 +299,7 @@ export function Dashboard() {
               <CameraFeed
                 density={signals?.density ?? 0}
                 zone={formatZone(selectedZone)}
+                zoneId={selectedZone}
               />
             </div>
           </div>
