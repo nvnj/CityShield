@@ -92,12 +92,13 @@ const SEVERITY_STROKE: Record<Severity, string> = {
 export function StadiumMap({ selectedZone, zoneSeverity = {}, onZoneClick }: Props) {
   return (
     <svg
-      viewBox="0 0 400 330"
+      viewBox="0 0 400 340"
       width="100%"
-      style={{ display: 'block' }}
+      preserveAspectRatio="xMidYMid meet"
+      style={{ display: 'block', overflow: 'visible' }}
     >
       {/* Background */}
-      <rect width="400" height="320" fill="#0a0a1a" />
+      <rect width="400" height="340" fill="#0a0a1a" />
 
       {/* Pitch */}
       <ellipse cx={CX} cy={CY} rx={IRX - 8} ry={IRY - 8} fill="#0d2b0d" stroke="#1a4d1a" strokeWidth="1" />
