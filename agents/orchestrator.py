@@ -18,6 +18,8 @@ import logging
 import os
 from datetime import UTC, datetime
 
+DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() == "true"
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -101,10 +103,15 @@ def run_assessment(
             )
 
     # Step 4 — correlation + risk (Gemini call #1)
+    if DEMO_MODE:
+        time_to_kickoff = 45  # simulate T-45 minutes: imminent pre-match arrival pressure
+    else:
+        time_to_kickoff = _minutes_to_kickoff()
+
     context = {
         "zone": zone or "all",
         "window_minutes": window_minutes,
-        "time_to_event_minutes": _minutes_to_kickoff(),
+        "time_to_event_minutes": time_to_kickoff,
         "baseline_density": 0.3,  # configurable per venue
     }
     logger.info("Running correlation assessment...")

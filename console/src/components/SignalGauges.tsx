@@ -121,6 +121,9 @@ interface Props {
 
 export function SignalGauges({ signals }: Props) {
   console.log('signals data:', signals)
+  console.log('density value:', signals?.density)
+  console.log('speed_avg value:', signals?.speed_avg)
+  console.log('sentiment_score value:', signals?.sentiment_score)
 
   const density   = signals?.density         ?? 0
   const speed     = signals?.speed_avg       ?? 0
@@ -132,6 +135,12 @@ export function SignalGauges({ signals }: Props) {
   return (
     // Outer wrapper: flex column fills the column slot, gaps between cards
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: 8 }}>
+      {/* DEBUG — remove after confirming gauges work */}
+      <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#6a6a9a', flexShrink: 0, lineHeight: 1.6 }}>
+        <span>density: {String(signals?.density ?? 'null')} </span>
+        <span>· speed: {String(signals?.speed_avg ?? 'null')} </span>
+        <span>· sentiment: {String(signals?.sentiment_score ?? 'null')}</span>
+      </div>
       <RingGauge
         pct={density}
         color={densityColor(density)}

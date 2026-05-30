@@ -29,7 +29,9 @@ deploy:
 		--source . \
 		--region us-central1 \
 		--allow-unauthenticated \
-		--set-env-vars="ELASTIC_URL=$(ELASTIC_URL),ELASTIC_API_KEY=$(ELASTIC_API_KEY),GEMINI_MODEL=gemini-2.5-flash,GOOGLE_CLOUD_LOCATION=us,GOOGLE_CLOUD_PROJECT=cityshield-hackathon"
+		--memory 2Gi \
+		--cpu 2 \
+		--set-env-vars="ELASTIC_URL=$(ELASTIC_URL),ELASTIC_API_KEY=$(ELASTIC_API_KEY),GEMINI_MODEL=gemini-2.5-flash,GOOGLE_CLOUD_LOCATION=us-central1,GOOGLE_CLOUD_PROJECT=cityshield-hackathon,DEMO_MODE=true"
 
 # Demo: start replay feeders, wait for data, POST /assess, open console.
 # Expects the API (make run-api) to already be running on :8000.
